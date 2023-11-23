@@ -1,18 +1,78 @@
 #include <string>
 #include <cassert>
+#include <vector>
 
 using namespace std;
+
+struct MatcherPointers {
+    int contentIdx;
+    int patternIdx;
+};
 
 class Solution {
 public:
     bool isMatch(string content, string pattern) {
-        return isMatch(content, pattern, 0, 0, -1);
+        vector<MatcherPointers> matcherPointersList = {MatcherPointers{0, 0}};
+        while (!matcherPointersList.empty()) {
+            MatcherPointers matcherPointers = matcherPointersList.back();
+            matcherPointersList.pop_back();
+
+            if (matcherPointers.patternIdx >= pattern.length()) {
+                if (matcherPointers.contentIdx == content.length()) {
+                    return true;
+                } else {
+                    continue;
+                }
+            }
+
+            bool isStarred = false;
+            if (matcherPointers.patternIdx < pattern.length() - 1) {
+                char nextP = pattern.at(matcherPointers.patternIdx + 1);
+                if (nextP == '*') {
+                    isStarred = true;
+                }
+            }
+
+            if (matcherPointers.contentIdx == content.length()) {
+                if (!isStarred) {
+                    continue;
+                }
+                matcherPointersList.push_back(MatcherPointers{matcherPointers.contentIdx, matcherPointers.patternIdx + 2});
+                continue;
+            }
+
+            char p = pattern.at(matcherPointers.patternIdx);
+            char c = content.at(matcherPointers.contentIdx);
+            bool doesMatch = p == '.' || p == c;
+
+            if (isStarred) {
+                if (doesMatch) {
+                    matcherPointersList.push_back(MatcherPointers{matcherPointers.contentIdx + 1, matcherPointers.patternIdx});
+                    matcherPointersList.push_back(MatcherPointers{matcherPointers.contentIdx, matcherPointers.patternIdx + 2});
+                } else {
+                    matcherPointersList.push_back(MatcherPointers{matcherPointers.contentIdx, matcherPointers.patternIdx + 2});
+                }
+            } else {
+                if (doesMatch) {
+                    matcherPointersList.push_back(MatcherPointers{matcherPointers.contentIdx + 1, matcherPointers.patternIdx + 1});
+                } else {
+                    continue;
+                }
+
+            }
+        }
+        return false;
     }
 
-    bool isMatch(string content, string pattern, int contentIdx, int patternIdx, int lastPatternIdx) {
-        if (contentIdx == content.length()) return true;
-        if (patternIdx >= pattern.length()) return false;
-        char c = content.at(contentIdx);
+    bool isMatch(string content, string pattern, int contentIdx, int patternIdx) {
+        if (patternIdx >= pattern.length()) {
+            if (contentIdx == content.length()) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+
         char p = pattern.at(patternIdx);
         bool isStarred = false;
         if (patternIdx < pattern.length() - 1) {
@@ -21,27 +81,28 @@ public:
                 isStarred = true;
             }
         }
-        bool doesMatch;
-        if (p == '.') {
-            if (patternIdx == lastPatternIdx) {
-                char prevC = content.at(contentIdx - 1);
-                doesMatch = (prevC == c);
-            } else {
-                doesMatch = true;
+
+        if (contentIdx == content.length()) {
+            if (!isStarred) {
+                return false;
             }
-        } else {
-            doesMatch = (p == c);
+            return isMatch(content, pattern, contentIdx, patternIdx + 2);
         }
+
+        char c = content.at(contentIdx);
+
+        bool doesMatch = p == '.' || p == c;
+
         if (isStarred) {
             if (doesMatch) {
-                return isMatch(content, pattern, contentIdx + 1, patternIdx, patternIdx) ||
-                       isMatch(content, pattern, contentIdx, patternIdx + 2, patternIdx);
+                return isMatch(content, pattern, contentIdx + 1, patternIdx) ||
+                       isMatch(content, pattern, contentIdx, patternIdx + 2);
             } else {
-                return isMatch(content, pattern, contentIdx, patternIdx + 2, patternIdx);
+                return isMatch(content, pattern, contentIdx, patternIdx + 2);
             }
         } else {
             if (doesMatch) {
-                return isMatch(content, pattern, contentIdx + 1, patternIdx + 1, patternIdx);
+                return isMatch(content, pattern, contentIdx + 1, patternIdx + 1);
             } else {
                 return false;
             }
